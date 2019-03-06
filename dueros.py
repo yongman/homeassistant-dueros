@@ -401,7 +401,16 @@ TRANSLATIONS = {
         'DecrementBrightnessPercentageRequest': lambda state, payload: ('turn_on', {'brightness_pct': max(state.attributes['brightness'] / 255 * 100 - payload['deltaPercentage']['value'], 0)}),
         'SetColorRequest': lambda state, payload: ('turn_on', {"hs_color": [float(payload['color']['hue']), float(payload['color']['saturation']) * 100]})
     },
-
+    'climate': {
+        'TurnOnRequest': 'turn_on',
+        'TurnOffRequest': 'turn_off',
+        'TimingTurnOnRequest': 'turn_on',
+        'TimingTurnOffRequest': 'turn_off',
+        'SetModeRequest': lambda state, payload: ('turn_on', {'operation_mode': payload['mode']['value']}),
+        'IncrementTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': min(max_temp, state.attributes['temperature'] + state.attributes['target_temp_step'])}),
+        'DecrementTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': max(min_temp, state.attributes['temperature'] - state.attributes['target_temp_step'])}),
+        'SetTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': min(max_temp, max(min_tmp, payload['temperature']['value']))})
+    },
 }
 
 def guessDeviceType(entity_id, attributes):
