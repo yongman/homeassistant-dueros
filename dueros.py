@@ -133,16 +133,13 @@ async def handleRequest(data):
             result = await controlDevice(name, payload)
         elif namespace == 'DuerOS.ConnectedHome.Query':
             result = queryDevice(name, payload)
-            if not 'errorCode' in result:
-                properties = result
-                result = {}
         else:
             result = errorResult('SERVICE_ERROR')
     else:
         result = errorResult('ACCESS_TOKEN_INVALIDATE')
 
     # Check error and fill response name
-    header['name'] = name
+    header['name'] = name.replace('Request', 'Response')
 
     # Fill response deviceId
     if 'deviceId' in payload:
@@ -232,33 +229,19 @@ async def controlDevice(action, payload):
 
 
 def queryDevice(name, payload):
-    deviceId = payload['deviceId']
+    applianceDic = payload['appliance']
+    entity_id = applianceDic['applianceId']
+    domain = entity_id[:entity_id.find('.')]
 
-    if payload['deviceType'] == 'sensor':
-
-        states = _hass.states.async_all()
-
-        entity_ids = []
-        for state in states:
-            attributes = state.attributes
-            if state.entity_id.startswith('group.') and (attributes['friendly_name'] == deviceId or attributes.get('hagenie_zone') == deviceId):
-                entity_ids = attributes.get('entity_id')
-                break
-
-        properties = [{'name':'powerstate', 'value':'on'}]
-        for state in states:
-            entity_id = state.entity_id
-            attributes = state.attributes
-            if entity_id.startswith('sensor.') and (entity_id in entity_ids or attributes['friendly_name'].startswith(deviceId) or attributes.get('hagenie_zone') == deviceId):
-                prop,action = guessAction(entity_id, attributes, state.state)
-                if prop is None:
-                    continue
-                properties.append(prop)
-        return properties
-    else:
-        state = _hass.states.get(deviceId)
-        if state is not None or state.state != 'unavailable':
-            return {'name':'powerstate', 'value':state.state}
+    states = _hass.states.async_all()
+    if entity_id.startswith('sensor.temperature'):
+        # 温度传感器
+        state = _hass.states.get(entity_id)
+        return {'temperatureReading': {'value': state.state}}
+    elif entity_id.startswith('sensor.humidity'):
+        # 湿度传感器
+        state = _hass_states.get(entity_id)
+        return {'humidity': {'value': state.state}}
     return errorResult('IOT_DEVICE_OFFLINE')
 
 def getControlService(action):
