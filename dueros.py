@@ -240,7 +240,7 @@ def queryDevice(name, payload):
         return {'temperatureReading': {'value': state.state}}
     elif entity_id.startswith('sensor.humidity'):
         # 湿度传感器
-        state = _hass_states.get(entity_id)
+        state = _hass.states.get(entity_id)
         return {'humidity': {'value': state.state}}
     return errorResult('IOT_DEVICE_OFFLINE')
 
