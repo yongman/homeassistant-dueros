@@ -242,6 +242,9 @@ def queryDevice(name, payload):
         # 湿度传感器
         state = _hass.states.get(entity_id)
         return {'humidity': {'value': state.state}}
+    elif entity_id.startswith('sensor.filtered_water'):
+        state = _hass.states.get(entity_id)
+        return {'ppm': {'value': float(state.state)*1.0, 'scale': '毫克每升'}}
     return errorResult('IOT_DEVICE_OFFLINE')
 
 def getControlService(action):
@@ -407,9 +410,9 @@ TRANSLATIONS = {
         'TimingTurnOnRequest': 'turn_on',
         'TimingTurnOffRequest': 'turn_off',
         'SetModeRequest': lambda state, payload: ('turn_on', {'operation_mode': payload['mode']['value']}),
-        'IncrementTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': min(max_temp, state.attributes['temperature'] + state.attributes['target_temp_step'])}),
-        'DecrementTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': max(min_temp, state.attributes['temperature'] - state.attributes['target_temp_step'])}),
-        'SetTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': min(max_temp, max(min_tmp, payload['temperature']['value']))})
+        'IncrementTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': min(state.attributes['max_temp'], state.attributes['temperature'] + state.attributes['target_temp_step'])}),
+        'DecrementTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': max(state.attributes['min_temp'], state.attributes['temperature'] - state.attributes['target_temp_step'])}),
+        'SetTemperatureRequest': lambda state, payload: ('set_temperature', {'temperature': min(state.attributes['max_temp'], max(state.attributes['min_temp'], payload['targetTemperature']['value']))})
     },
 }
 
@@ -461,6 +464,8 @@ def guessAction(entity_id, attributes):
         actions = ["turnOn", "timingTurnOn", "turnOff", "timingTurnOff", "setSuction"]
     elif entity_id.startswith('sensor.'):
         actions = ["getTemperatureReading", "getHumidity"]
+    elif entity_id.startswith('climate.'):
+        actions = ["turnOn", "turnOff", "incrementTemperature", "decrementTemperature", "setTemperature"]
     else:
         actions = ["turnOn", "timingTurnOn", "turnOff", "timingTurnOff"]
 
